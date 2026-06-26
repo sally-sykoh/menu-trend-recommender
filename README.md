@@ -1,6 +1,10 @@
-# AI-Powered Menu Trend Recommendation System
+# Trend-to-Menu Intelligence System
 
-This is a data science portfolio MVP for recommending existing recipes that can be adapted into trend-driven menu ideas.
+AI-assisted decision support MVP for menu planning and recipe adaptation.
+
+This project was inspired by a product discussion about how restaurant brands can use AI in menu development. The key insight was that AI should not fully create new menus by itself. Instead, it should help teams detect food trends earlier, connect those trends to internal recipe assets, and provide evidence for faster menu planning decisions.
+
+In this MVP, the system takes a food trend keyword or natural-language business question and recommends existing recipes that could be reused or adapted into trend-driven menu ideas.
 
 Example question:
 
@@ -8,7 +12,63 @@ Example question:
 Pizza is trending. Which existing recipes in our database could be reused or adapted into pizza-related menu items?
 ```
 
-The project is positioned as a recommendation and ranking system, not a chatbot. It uses feature engineering, semantic similarity, ingredient overlap, business scoring, explainability, and a simple Streamlit dashboard.
+## Problem
+
+Menu development in restaurant brands often depends on manual trend research, individual experience, and scattered internal data. This can create several issues:
+
+- Trends may be discovered too late.
+- Similar internal recipes may already exist but remain hard to find.
+- Menu planning, R&D, cost review, and marketing are often disconnected.
+- Teams spend time collecting and organizing information instead of making decisions.
+- Launch timing can matter as much as the menu idea itself.
+
+This project frames the problem as a ranking and decision-support task:
+
+```text
+Given a food trend signal, which existing recipes are most adaptable, operationally feasible, and business-relevant?
+```
+
+## Current MVP Scope
+
+The current MVP focuses on the core recommendation problem: connecting a user-entered trend query with existing recipe assets.
+
+Implemented features:
+
+- Recipe dataset loading with flexible column mapping.
+- Recipe text preprocessing for names, ingredients, tags, and instructions.
+- Recipe-level feature engineering.
+- Trend keyword expansion with related concepts and ingredients.
+- Semantic similarity between trend query and recipe text.
+- Ingredient overlap scoring between trend-related ingredients and recipe ingredients.
+- Business-feasibility scoring using popularity, prep efficiency, cost efficiency, and margin signals.
+- Final weighted recommendation ranking.
+- Score breakdown and explanation for each recommended recipe.
+- Streamlit dashboard for interactive exploration.
+
+This MVP is intentionally not a fully autonomous menu creator. It is designed to support human menu planners by surfacing relevant candidates and explaining why they may be worth reviewing.
+
+## Recommendation Score
+
+```text
+final_score =
+0.35 * semantic_similarity
++ 0.25 * ingredient_overlap
++ 0.15 * popularity_score
++ 0.10 * cost_efficiency
++ 0.10 * prep_efficiency
++ 0.05 * margin_score
+```
+
+Score components:
+
+- `semantic_similarity`: how closely the recipe text matches the trend query.
+- `ingredient_overlap`: how many trend-related ingredients appear in the recipe.
+- `popularity_score`: rating and review-count based popularity signal.
+- `cost_efficiency_score`: higher score for lower-cost recipes when cost data exists.
+- `prep_efficiency_score`: higher score for faster recipes.
+- `margin_score`: higher score for higher-margin recipes when margin data exists.
+
+If `cost` or `margin` is missing, the MVP uses a neutral placeholder score of `0.5`. This keeps the ranking pipeline stable while making it clear where real internal business data would improve the model.
 
 ## Project Structure
 
@@ -36,36 +96,17 @@ menu-trend-recommender/
     └── sample_recommendations.csv
 ```
 
-## MVP Features
-
-- Flexible recipe CSV loading with column standardization.
-- Beginner-friendly preprocessing for ingredients, tags, instructions, and recipe text.
-- Recipe-level feature engineering for popularity, prep efficiency, cost efficiency, and margin.
-- Trend keyword expansion dictionary for ingredients and related concepts.
-- Semantic similarity using `sentence-transformers`.
-- TF-IDF fallback if a transformer model is unavailable in the local environment.
-- Ingredient overlap scoring between trend ingredients and recipe ingredients.
-- Weighted final recommendation score:
-
-```text
-final_score =
-0.35 * semantic_similarity
-+ 0.25 * ingredient_overlap
-+ 0.15 * popularity_score
-+ 0.10 * cost_efficiency
-+ 0.10 * prep_efficiency
-+ 0.05 * margin_score
-```
-
 ## Dataset
 
-Place your Kaggle recipe CSV at:
+Place a recipe CSV file at:
 
 ```text
 data/raw/recipes.csv
 ```
 
-The code assumes the dataset may contain columns like:
+The code is designed to work with Kaggle-style recipe datasets such as Food.com Recipes, Food.com Recipes and Interactions, Food.com Recipes and Reviews, or Epicurious recipes.
+
+Expected or mappable columns:
 
 - `recipe_id`
 - `recipe_name`
@@ -78,25 +119,16 @@ The code assumes the dataset may contain columns like:
 - `n_ingredients`
 - `rating` or `avg_rating`
 - `review_count`
+- optional: `cost`
+- optional: `margin`
+- optional: `cuisine`
+- optional: `diet`
 
-If the column names differ, update `DEFAULT_COLUMN_MAP` in `src/data_loader.py`.
+If the dataset uses different column names, update `DEFAULT_COLUMN_MAP` in `src/data_loader.py`.
 
-If no CSV is available, the app uses a small built-in sample dataset so the MVP still runs.
-
-## Cost and Margin Placeholder Logic
-
-Many public recipe datasets do not include ingredient cost, selling price, or margin. This MVP handles those gaps explicitly:
-
-- If `cost` exists, lower cost receives a higher `cost_efficiency_score`.
-- If `cost` is missing, `cost_efficiency_score` defaults to `0.5`, a neutral placeholder.
-- If `margin` exists, higher margin receives a higher `margin_score`.
-- If `margin` is missing, `margin_score` defaults to `0.5`, a neutral placeholder.
-
-For a production version, cost could be estimated by joining ingredients to supplier prices, and margin could be calculated from expected menu price minus estimated food cost.
+If no CSV is available, the app uses a small built-in sample dataset so the MVP can still run.
 
 ## How to Run Locally
-
-From the project folder:
 
 ```bash
 python -m venv .venv
@@ -121,33 +153,46 @@ results = recommend_recipes(
 print(results[["recipe_name", "final_score", "explanation"]])
 ```
 
-## Evaluation Ideas
+## Portfolio Positioning
 
-For a stronger portfolio story, add evaluation in phases:
+This project is best described as a data science and recommendation-system MVP, not as a chatbot.
 
-- Create a manually labeled validation set of trend queries and relevant recipes.
-- Measure Precision@K and Recall@K.
-- Track score distribution and recommendation diversity.
-- Compare ranking variants:
-  - semantic-only
-  - ingredient-only
-  - business-only
-  - full weighted model
-- Collect qualitative feedback from chefs, menu planners, or product managers.
+Resume-friendly summary:
 
-## Next Improvements
+```text
+Built a Streamlit-based recommendation system that connects food trend queries to reusable internal recipes using sentence embeddings, ingredient overlap, and business-feasibility scoring to support menu planning decisions.
+```
 
-- Add automatic trend extraction from Google Trends, TikTok food trends, or internal sales data.
-- Replace static keyword expansion with an LLM-assisted trend-to-ingredient parser.
-- Add ingredient substitution suggestions.
-- Add SQLite or DuckDB for larger recipe catalogs.
-- Add model cards and experiment tracking.
+Key data science elements:
 
----
+- Feature engineering from recipe metadata, ingredients, ratings, review counts, prep time, cost, and margin.
+- Semantic retrieval using sentence-transformer embeddings with fallback similarity logic.
+- Ingredient-level overlap scoring.
+- Weighted ranking model.
+- Explainable recommendation output.
+- Evaluation-ready structure with Precision@K and coverage helpers.
 
-# AI 기반 메뉴 트렌드 추천 시스템
+## Future Production Extensions
 
-이 프로젝트는 음식 트렌드 키워드나 자연어 비즈니스 질문을 입력하면, 기존 레시피 데이터베이스에서 새 메뉴로 재활용하거나 변형할 수 있는 레시피 후보를 추천하는 데이터 사이언스 포트폴리오 MVP입니다.
+The broader business idea can be extended into a menu intelligence system by connecting additional data sources and workflows. These are not implemented in the current MVP; they are production roadmap items.
+
+- External trend sensing from Google Trends, TikTok, YouTube, communities, news, delivery apps, and competitor menus.
+- POS and sales data integration for brand-level sales, margin, seasonality, and historical menu performance analysis.
+- Large-scale recipe catalog search using SQLite, DuckDB, BigQuery, or another analytics database.
+- Adaptation classification such as `Ready to Adapt`, `Minor Modification Needed`, and `New Development Needed`.
+- Margin-aware menu portfolio analysis using food cost, expected price, and sales mix.
+- Marketing channel suggestions based on where each trend is emerging.
+- Influencer or content-angle suggestions for launch planning.
+- Automated weekly trend and menu opportunity reports for planning meetings.
+- Experiment tracking, model cards, and human-labeled validation sets for ranking evaluation.
+
+## 한국어 요약
+
+이 프로젝트는 외식 브랜드의 메뉴 기획을 돕는 AI 의사결정 보조 MVP입니다.
+
+핵심 아이디어는 AI가 신메뉴를 직접 완성하는 것이 아니라, 외부 트렌드와 내부 레시피 자산을 연결해 사람이 더 빠르고 근거 있는 메뉴 기획 결정을 할 수 있도록 돕는 것입니다.
+
+현재 MVP는 사용자가 입력한 음식 트렌드 키워드나 질문을 기존 레시피 데이터와 비교해, 재활용하거나 변형할 가능성이 높은 레시피 후보를 추천합니다.
 
 예시 질문:
 
@@ -155,144 +200,37 @@ For a stronger portfolio story, add evaluation in phases:
 피자가 트렌드입니다. 기존 레시피 중 피자 관련 메뉴로 재활용하거나 변형할 수 있는 레시피는 무엇인가요?
 ```
 
-이 프로젝트는 단순 챗봇이 아니라 추천 시스템과 랭킹 모델 중심으로 설계되었습니다. 레시피 텍스트 임베딩, 재료 매칭, 인기도, 비용 효율, 조리 효율, 마진 점수를 결합해 최종 추천 점수를 계산합니다.
+## 현재 구현 범위
 
-## 프로젝트 구조
+- 레시피 데이터 로딩 및 컬럼 매핑
+- 재료, 태그, 조리 방법, 레시피명 전처리
+- 레시피 단위 feature engineering
+- 트렌드 키워드 확장
+- 트렌드 질문과 레시피 텍스트 간 semantic similarity 계산
+- 트렌드 관련 재료와 레시피 재료 간 ingredient overlap 계산
+- 인기도, 조리 효율, 비용 효율, 마진 가능성을 반영한 비즈니스 점수 계산
+- 최종 weighted recommendation ranking
+- 추천 결과별 점수 breakdown과 추천 이유 제공
+- Streamlit dashboard 구현
 
-```text
-menu-trend-recommender/
-├── README.md
-├── requirements.txt
-├── app.py
-├── data/
-│   ├── raw/
-│   └── processed/
-├── notebooks/
-│   └── 01_eda.ipynb
-├── src/
-│   ├── __init__.py
-│   ├── data_loader.py
-│   ├── preprocessing.py
-│   ├── feature_engineering.py
-│   ├── trend_expansion.py
-│   ├── similarity.py
-│   ├── scoring.py
-│   ├── recommender.py
-│   └── evaluation.py
-└── outputs/
-    └── sample_recommendations.csv
-```
+이 프로젝트는 AI가 메뉴를 자동으로 만들어주는 시스템이 아니라, 메뉴 기획자가 검토할 후보를 빠르게 찾고 판단 근거를 확인할 수 있도록 돕는 의사결정 보조 시스템입니다.
 
-## 주요 기능
+## 실무 확장 방향
 
-- Kaggle 레시피 CSV 데이터를 불러오고 표준 컬럼명으로 정리합니다.
-- 재료, 태그, 조리 방법, 레시피명을 전처리해 검색용 텍스트를 만듭니다.
-- 레시피 단위 feature engineering을 수행합니다.
-- 트렌드 키워드를 관련 컨셉과 재료로 확장합니다.
-- `sentence-transformers`를 사용해 트렌드 질문과 레시피 텍스트 간 의미적 유사도를 계산합니다.
-- 로컬 환경에서 transformer 모델을 사용할 수 없으면 TF-IDF 또는 간단한 토큰 유사도 방식으로 fallback합니다.
-- 트렌드 관련 재료와 레시피 재료 간 ingredient overlap 점수를 계산합니다.
-- 비즈니스 지표를 반영한 최종 추천 점수를 계산합니다.
-- Streamlit 대시보드에서 추천 결과, 점수 breakdown, 매칭 재료, 추천 이유를 확인할 수 있습니다.
+회의에서 논의된 원래 아이디어는 아래와 같은 방향으로 확장할 수 있습니다. 아래 항목들은 현재 MVP에 모두 구현된 기능이 아니라, 실무 적용 시 확장 가능한 로드맵입니다.
 
-## 최종 추천 점수
+- Google Trends, TikTok, YouTube, 커뮤니티, 뉴스, 배달앱 기반 외부 트렌드 센싱
+- POS 및 판매 데이터 연동을 통한 브랜드별 판매량, 마진율, 시즌성, 메뉴 성과 분석
+- SQLite, DuckDB, BigQuery 기반 대용량 레시피 카탈로그 검색
+- `바로 활용 가능`, `일부 수정 필요`, `신규 개발 필요` 같은 메뉴 후보 분류
+- 원가, 예상 판매가, 판매 구성비를 반영한 마진 기반 메뉴 포트폴리오 분석
+- 트렌드 발생 채널을 기반으로 한 마케팅 채널 및 콘텐츠 방향 제안
+- 인플루언서 후보 또는 콘텐츠 angle 제안
+- 메뉴 기획 회의용 주간 트렌드/메뉴 기회 리포트 자동 생성
+- 추천 모델 실험 관리, 모델 카드, 사람이 검수한 validation set 기반 평가
+
+## 레주메용 한 줄 설명
 
 ```text
-final_score =
-0.35 * semantic_similarity
-+ 0.25 * ingredient_overlap
-+ 0.15 * popularity_score
-+ 0.10 * cost_efficiency
-+ 0.10 * prep_efficiency
-+ 0.05 * margin_score
+외식 브랜드의 메뉴 기획을 돕기 위해 음식 트렌드 키워드와 기존 레시피 자산을 연결하는 추천 시스템 MVP를 개발했습니다. 문장 임베딩 기반 의미 유사도, 재료 겹침 점수, 인기도, 조리 효율, 비용 효율, 마진 점수를 결합해 재활용 가능한 메뉴 후보를 랭킹하고 추천 근거를 제공했습니다.
 ```
-
-각 점수의 의미:
-
-- `semantic_similarity`: 트렌드 질문과 레시피 텍스트의 의미적 유사도
-- `ingredient_overlap`: 트렌드 관련 재료와 레시피 재료의 겹침 정도
-- `popularity_score`: 평점과 리뷰 수를 결합한 인기도 점수
-- `cost_efficiency_score`: 비용이 낮을수록 높은 점수
-- `prep_efficiency_score`: 조리 시간이 짧을수록 높은 점수
-- `margin_score`: 마진이 높을수록 높은 점수
-
-## 데이터셋 사용 방법
-
-Kaggle에서 Food.com Recipes, Food.com Recipes and Reviews, Epicurious Recipes 같은 레시피 데이터를 다운로드한 뒤 CSV 파일을 아래 위치에 넣습니다.
-
-```text
-data/raw/recipes.csv
-```
-
-현재 코드는 다음과 같은 컬럼을 예상합니다.
-
-- `recipe_id`
-- `recipe_name`
-- `ingredients`
-- `tags`
-- `steps` 또는 `instructions`
-- `minutes` 또는 `prep_time_minutes`
-- `nutrition`
-- `n_steps`
-- `n_ingredients`
-- `rating` 또는 `avg_rating`
-- `review_count`
-
-실제 데이터셋의 컬럼명이 다르면 `src/data_loader.py`의 `DEFAULT_COLUMN_MAP`을 수정하면 됩니다.
-
-CSV 파일이 없어도 앱은 내장된 작은 샘플 데이터셋으로 실행됩니다. 그래서 Kaggle 데이터를 넣기 전에도 MVP를 바로 테스트할 수 있습니다.
-
-## 비용과 마진 컬럼 처리
-
-공개 레시피 데이터셋에는 원가, 판매가, 마진 정보가 없는 경우가 많습니다. 이 MVP에서는 해당 컬럼이 없을 때 중립 점수인 `0.5`를 사용합니다.
-
-- `cost` 컬럼이 있으면 비용이 낮은 레시피에 더 높은 `cost_efficiency_score`를 부여합니다.
-- `cost` 컬럼이 없으면 `cost_efficiency_score = 0.5`로 처리합니다.
-- `margin` 컬럼이 있으면 마진이 높은 레시피에 더 높은 `margin_score`를 부여합니다.
-- `margin` 컬럼이 없으면 `margin_score = 0.5`로 처리합니다.
-
-실무 버전에서는 재료별 공급 단가 테이블을 연결해 원가를 추정하고, 예상 판매가와 원가를 이용해 마진을 계산할 수 있습니다.
-
-## 로컬 실행 방법
-
-프로젝트 폴더에서 아래 명령어를 실행합니다.
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-streamlit run app.py
-```
-
-터미널에 표시되는 Streamlit 로컬 URL을 브라우저에서 열면 됩니다.
-
-## Python에서 직접 사용하기
-
-```python
-from src.recommender import prepare_recipe_dataset, recommend_recipes
-
-recipes = prepare_recipe_dataset("data/raw/recipes.csv")
-results = recommend_recipes(
-    query="Pizza is trending. Which recipes could become pizza-inspired menu items?",
-    recipes=recipes,
-    top_n=10,
-)
-print(results[["recipe_name", "final_score", "explanation"]])
-```
-
-## 포트폴리오에서 강조할 포인트
-
-- 단순 생성형 AI 챗봇이 아니라 데이터 기반 추천 시스템입니다.
-- 레시피 단위 feature engineering을 수행합니다.
-- semantic similarity와 ingredient overlap을 함께 사용합니다.
-- 인기도, 조리 시간, 비용, 마진 같은 비즈니스 신호를 랭킹에 반영합니다.
-- 추천 결과마다 점수 breakdown과 설명을 제공합니다.
-- 향후 Precision@K, Recall@K, ranking ablation test로 평가를 확장할 수 있습니다.
-
-## 향후 개선 아이디어
-
-- Google Trends, TikTok, 내부 판매 데이터에서 트렌드 키워드 자동 수집
-- LLM을 활용한 트렌드 키워드 → 관련 재료 자동 확장
-- 레시피별 대체 재료 추천
-- SQLite 또는 DuckDB를 활용한 대용량 레시피 카탈로그 관리
-- 추천 모델 실험 관리 및 모델 카드 작성
